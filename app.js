@@ -594,15 +594,15 @@ function loginDlg() {
   const localFileWarning = location.protocol === "file:"
     ? `<p class="notice notice-error rounded-lg p-3 mb-3 text-sm">กำลังเปิดเว็บจากไฟล์ในเครื่อง (file://) ซึ่งอาจทำให้ Firebase Authentication ปฏิเสธการเข้าสู่ระบบ ให้เปิดเว็บผ่าน localhost หรือโดเมนที่เพิ่มไว้ใน Firebase Authentication → Settings → Authorized domains</p>`
     : "";
-  open(`${head("เข้าสู่ระบบ Admin")}<form class="p-4" onsubmit="event.preventDefault();login()">${localFileWarning}<p class="text-sm mb-2" style="color:var(--mute)">Firebase project: ${esc(CONFIG.firebase.projectId)}</p><label class="lbl">อีเมล</label><input id="l_e" type="email" class="inp" autocomplete="username" required><label class="lbl">รหัสผ่าน</label><input id="l_p" type="password" class="inp" autocomplete="current-password" required>
+  open(`${head("เข้าสู่ระบบ Admin")}<form class="p-4" onsubmit="event.preventDefault();login()">${localFileWarning}<label class="lbl">อีเมล</label><input id="l_e" type="email" class="inp" autocomplete="username" required><label class="lbl">รหัสผ่าน</label><input id="l_p" type="password" class="inp" autocomplete="current-password" required>
   <div class="flex gap-2 flex-wrap"><button id="loginButton" class="btn btn-p mt-4" type="submit">เข้าสู่ระบบ</button><button id="resetPasswordButton" class="btn mt-4" type="button" onclick="resetPassword()">ส่งลิงก์ตั้งรหัสผ่านใหม่</button></div><p id="err" class="text-sm mt-2" role="alert" aria-live="polite"></p></form>`);
 }
 function authErrorMessage(error) {
   const messages = {
     "auth/invalid-email": "รูปแบบอีเมลไม่ถูกต้อง",
-    "auth/invalid-credential": "Firebase ไม่ยืนยันบัญชีนี้ในโปรเจกต์ที่แสดงด้านบน ตรวจว่าอีเมลถูกต้อง บัญชีอยู่ในโปรเจกต์นี้ และตั้งรหัสผ่านแล้ว",
-    "auth/invalid-login-credentials": "Firebase ไม่ยืนยันบัญชีนี้ในโปรเจกต์ที่แสดงด้านบน ตรวจว่าอีเมลถูกต้อง บัญชีอยู่ในโปรเจกต์นี้ และตั้งรหัสผ่านแล้ว",
-    "auth/user-not-found": "ไม่พบบัญชีอีเมลนี้ในโปรเจกต์ Firebase ที่แสดงด้านบน",
+    "auth/invalid-credential": "Firebase ไม่ยืนยันบัญชีนี้ ตรวจว่าอีเมลถูกต้อง บัญชีได้รับอนุญาตให้เข้าสู่ระบบ และตั้งรหัสผ่านแล้ว",
+    "auth/invalid-login-credentials": "Firebase ไม่ยืนยันบัญชีนี้ ตรวจว่าอีเมลถูกต้อง บัญชีได้รับอนุญาตให้เข้าสู่ระบบ และตั้งรหัสผ่านแล้ว",
+    "auth/user-not-found": "ไม่พบบัญชีอีเมลนี้",
     "auth/wrong-password": "รหัสผ่านไม่ถูกต้องสำหรับบัญชีนี้",
     "auth/user-disabled": "บัญชีนี้ถูกปิดใช้งาน",
     "auth/too-many-requests": "พยายามเข้าสู่ระบบหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่",
