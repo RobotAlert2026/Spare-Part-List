@@ -139,18 +139,18 @@ function hidePartImagePreview() {
   partImagePreview.hidden = true;
 }
 $("#list").addEventListener("pointerover", event => {
-  const trigger = event.target.closest(".part-preview-trigger");
+  const trigger = event.target.closest(".part-preview-trigger, .part-card-preview-trigger");
   if (trigger) showPartImagePreview(trigger);
 });
 $("#list").addEventListener("pointerout", event => {
-  if (event.target.closest(".part-preview-trigger") && !event.relatedTarget?.closest?.(".part-preview-trigger")) hidePartImagePreview();
+  if (event.target.closest(".part-preview-trigger, .part-card-preview-trigger") && !event.relatedTarget?.closest?.(".part-preview-trigger, .part-card-preview-trigger")) hidePartImagePreview();
 });
 $("#list").addEventListener("focusin", event => {
-  const trigger = event.target.closest(".part-preview-trigger");
+  const trigger = event.target.closest(".part-preview-trigger, .part-card-preview-trigger");
   if (trigger) showPartImagePreview(trigger);
 });
 $("#list").addEventListener("focusout", event => {
-  if (event.target.closest(".part-preview-trigger")) hidePartImagePreview();
+  if (event.target.closest(".part-preview-trigger, .part-card-preview-trigger")) hidePartImagePreview();
 });
 const depts = p => [...new Set([
   ...(p.departments || []),
@@ -297,7 +297,7 @@ function render() {
 const partNumber = p => safeUrl(p.images?.[0])
   ? `<span class="part-preview-trigger mono font-semibold" tabindex="0" data-preview-image="${esc(safeUrl(p.images[0]))}" data-preview-alt="${esc(p.part_name_th || p.part_number)}" aria-describedby="partImagePreview">${esc(p.part_number)}</span>`
   : `<span class="mono font-semibold">${esc(p.part_number)}</span>`;
-const card = p => `<article class="bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow" style="border-color:var(--line)">
+const card = p => `<article class="bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow${safeUrl(p.images?.[0]) ? " part-card-preview-trigger" : ""}" ${safeUrl(p.images?.[0]) ? `data-preview-image="${esc(safeUrl(p.images[0]))}" data-preview-alt="${esc(p.part_name_th || p.part_number)}" aria-describedby="partImagePreview"` : ""} style="border-color:var(--line)">
   <div class="p-4"><div class="flex items-start gap-3">${safeUrl(p.images?.[0]) ? `<img loading="lazy" src="${esc(thumb(p.images[0], 160))}" alt="${esc(p.part_name_th || p.part_number)}" class="part-card-thumb">` : ""}
   <div class="min-w-0"><div class="text-lg">${partNumber(p)}</div>
   <div class="font-medium">${esc(p.part_name_th || p.part_name_en)}</div></div></div>
