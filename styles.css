@@ -33,6 +33,11 @@ button,select,input,textarea{font:inherit}
 .inp{width:100%;min-height:44px;padding:.5rem .75rem;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
 .inp::placeholder{color:var(--mute)}
 .tag{font-size:.75rem;padding:.18rem .55rem;border-radius:999px;background:var(--surface-muted);color:var(--ink)}
+.part-preview-trigger{cursor:help;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:var(--acc);text-underline-offset:3px}
+.part-preview-trigger:focus-visible{outline:3px solid var(--acc2);outline-offset:3px;border-radius:2px}
+.part-card-thumb{display:block;flex:none;width:80px;height:80px;object-fit:cover;border-radius:8px;background:var(--surface-muted)}
+.part-image-preview{position:fixed;z-index:1000;width:min(280px,calc(100vw - 24px));height:min(220px,calc(100vh - 24px));padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--card);box-shadow:0 12px 32px rgba(12,12,14,.28);pointer-events:none}
+.part-image-preview img{display:block;width:100%;height:100%;object-fit:contain;border-radius:5px}
 .plate{border-left:4px solid var(--acc2)}
 .stat{background:rgba(255,255,255,.72);border:1px solid rgba(70,50,55,.1);border-radius:10px;padding:.7rem .85rem}
 .dark-mode .stat{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14)}

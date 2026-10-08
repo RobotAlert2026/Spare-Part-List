@@ -10,6 +10,7 @@ const CONFIG = {
     appId: "1:1045069859505:web:c5a88371afa5acd5337090",
     measurementId: "G-2BDL11KL1T"
   },
+  // Add each Firebase Authentication user's UID here and to firestore.rules.
   adminUids: ["ZuMoD4BryHVakuieCehpKcfsd353"],
   // เช่น { apiKey:"...", authDomain:"...", projectId:"...", appId:"..." }
   cloudinary: { cloudName: "s52qoaji", uploadPreset: "Spare part list", folder: "spare-parts" },
@@ -110,6 +111,47 @@ const thumb = (u, w = 400) => {
   const url = safeUrl(u);
   return url && url.includes("/upload/") ? url.replace("/upload/", `/upload/w_${w},q_auto,f_auto/`) : url;
 };
+const partImagePreview = document.createElement("div");
+partImagePreview.id = "partImagePreview";
+partImagePreview.className = "part-image-preview";
+partImagePreview.setAttribute("role", "tooltip");
+partImagePreview.hidden = true;
+document.body.append(partImagePreview);
+function showPartImagePreview(trigger) {
+  const imageUrl = safeUrl(trigger.dataset.previewImage);
+  if (!imageUrl) return;
+  const image = document.createElement("img");
+  image.src = thumb(imageUrl, 480);
+  image.alt = trigger.dataset.previewAlt || "รูปตัวอย่างอะไหล่";
+  partImagePreview.replaceChildren(image);
+  partImagePreview.hidden = false;
+  const rect = trigger.getBoundingClientRect();
+  const width = Math.min(280, window.innerWidth - 24);
+  const height = Math.min(220, window.innerHeight - 24);
+  const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12));
+  const top = rect.bottom + height + 12 <= window.innerHeight
+    ? rect.bottom + 8
+    : Math.max(12, rect.top - height - 8);
+  partImagePreview.style.left = `${left}px`;
+  partImagePreview.style.top = `${top}px`;
+}
+function hidePartImagePreview() {
+  partImagePreview.hidden = true;
+}
+$("#list").addEventListener("pointerover", event => {
+  const trigger = event.target.closest(".part-preview-trigger");
+  if (trigger) showPartImagePreview(trigger);
+});
+$("#list").addEventListener("pointerout", event => {
+  if (event.target.closest(".part-preview-trigger") && !event.relatedTarget?.closest?.(".part-preview-trigger")) hidePartImagePreview();
+});
+$("#list").addEventListener("focusin", event => {
+  const trigger = event.target.closest(".part-preview-trigger");
+  if (trigger) showPartImagePreview(trigger);
+});
+$("#list").addEventListener("focusout", event => {
+  if (event.target.closest(".part-preview-trigger")) hidePartImagePreview();
+});
 const depts = p => [...new Set([
   ...(p.departments || []),
   ...machineIds(p).map(id => (mOf(id) || {}).department).filter(Boolean)
@@ -252,16 +294,19 @@ function render() {
     ? `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${list.map(card).join("")}</div>`
     : `<div class="overflow-x-auto bg-white rounded-xl border shadow-sm" style="border-color:var(--line)"><table class="w-full text-sm min-w-[1200px]"><caption class="sr-only">รายการอะไหล่และเครื่องจักรที่เกี่ยวข้อง</caption><thead class="text-left surface-muted"><tr>${["Part No.", "ชื่ออะไหล่", "แผนกที่ใช้", "เครื่องจักรที่ใช้", "ระบบ / จุดติดตั้ง", "หมวดหมู่", "ยี่ห้อ / ผู้ผลิต", "ตำแหน่งจัดเก็บ", "สเปคย่อ", ""].map(h => `<th class="p-3">${h}</th>`).join("")}</tr></thead><tbody>${list.map(row).join("")}</tbody></table></div>`;
 }
-const card = p => `<article class="bg-white rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-shadow" style="border-color:var(--line)">
-  <div class="aspect-[4/3] surface-muted flex items-center justify-center">${safeUrl(p.images?.[0]) ? `<img loading="lazy" src="${esc(thumb(p.images[0]))}" alt="${esc(p.part_name_th || p.part_number)}" class="w-full h-full object-cover">` : `<span style="color:var(--mute)">ไม่มีรูป</span>`}</div>
-  <div class="p-4"><div class="mono font-semibold text-lg">${esc(p.part_number)}</div>
-  <div class="font-medium">${esc(p.part_name_th || p.part_name_en)}</div>
+const partNumber = p => safeUrl(p.images?.[0])
+  ? `<span class="part-preview-trigger mono font-semibold" tabindex="0" data-preview-image="${esc(safeUrl(p.images[0]))}" data-preview-alt="${esc(p.part_name_th || p.part_number)}" aria-describedby="partImagePreview">${esc(p.part_number)}</span>`
+  : `<span class="mono font-semibold">${esc(p.part_number)}</span>`;
+const card = p => `<article class="bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow" style="border-color:var(--line)">
+  <div class="p-4"><div class="flex items-start gap-3">${safeUrl(p.images?.[0]) ? `<img loading="lazy" src="${esc(thumb(p.images[0], 160))}" alt="${esc(p.part_name_th || p.part_number)}" class="part-card-thumb">` : ""}
+  <div class="min-w-0"><div class="text-lg">${partNumber(p)}</div>
+  <div class="font-medium">${esc(p.part_name_th || p.part_name_en)}</div></div></div>
   ${p.subsystem || p.installation_point ? `<div class="text-sm mt-1" style="color:var(--mute)">${esc([p.subsystem, p.installation_point].filter(Boolean).join(" · "))}</div>` : ""}
   <div class="text-sm" style="color:var(--mute)">${esc(p.brand_vendor)}${p.supplier ? ` · ${esc(p.supplier)}` : ""}</div>
   <div class="flex flex-wrap gap-1 mt-2">${machineIds(p).slice(0, 3).map(id => `<button type="button" class="tag" onclick="selectMachine(${jsArg(id)})">${esc(mName(id))}</button>`).join("")}${depts(p).slice(0, 2).map(d => `<span class="tag">${esc(d)}</span>`).join("")}</div>
   <div class="text-sm mt-2" style="color:var(--mute)">${specLine(p)}</div>
   <button class="btn btn-p w-full mt-3" type="button" onclick="detail(${jsArg(p.id)})">ดูรายละเอียดอะไหล่</button></div></article>`;
-const row = p => `<tr class="border-t" style="border-color:var(--line)"><td class="p-3 mono font-semibold">${esc(p.part_number)}</td><td class="p-3">${esc(p.part_name_th || p.part_name_en)}</td><td class="p-3">${esc(depts(p).join(", ") || "—")}</td><td class="p-3">${machineIds(p).map(id => `<button class="tag mr-1 mb-1" type="button" onclick="selectMachine(${jsArg(id)})">${esc(mName(id))}</button>`).join("") || "—"}</td><td class="p-3">${esc([p.subsystem, p.installation_point].filter(Boolean).join(" · ")) || "—"}</td><td class="p-3">${esc(p.category)}</td><td class="p-3">${esc(p.brand_vendor)}</td><td class="p-3">${esc(p.location_rack)}</td><td class="p-3">${specLine(p)}</td><td class="p-3"><button class="btn" type="button" onclick="detail(${jsArg(p.id)})">รายละเอียด</button></td></tr>`;
+const row = p => `<tr class="border-t" style="border-color:var(--line)"><td class="p-3">${partNumber(p)}</td><td class="p-3">${esc(p.part_name_th || p.part_name_en)}</td><td class="p-3">${esc(depts(p).join(", ") || "—")}</td><td class="p-3">${machineIds(p).map(id => `<button class="tag mr-1 mb-1" type="button" onclick="selectMachine(${jsArg(id)})">${esc(mName(id))}</button>`).join("") || "—"}</td><td class="p-3">${esc([p.subsystem, p.installation_point].filter(Boolean).join(" · ")) || "—"}</td><td class="p-3">${esc(p.category)}</td><td class="p-3">${esc(p.brand_vendor)}</td><td class="p-3">${esc(p.location_rack)}</td><td class="p-3">${specLine(p)}</td><td class="p-3"><button class="btn" type="button" onclick="detail(${jsArg(p.id)})">รายละเอียด</button></td></tr>`;
 function exportCsv() {
   const columns = ["Part No.", "Manufacturer Part No.", "ชื่อไทย", "ชื่ออังกฤษ", "หมวดหมู่", "ยี่ห้อ / ผู้ผลิต", "รุ่น", "ระบบย่อย", "จุดติดตั้ง", "เครื่องจักรที่ใช้", "Station", "แผนก", "ตำแหน่งจัดเก็บ", "อะไหล่ทดแทน", "สเปค", "หมายเหตุ", "แก้ไขล่าสุด"];
   const csvCell = value => {
@@ -356,6 +401,11 @@ async function delPart(id) {
 
 /* ============ Part form ============ */
 let fImgs = [], fInstallImgs = [], fInstallMarkers = [];
+let pendingPartUploads = 0, pendingInstallUploads = 0;
+function updatePartSaveButton() {
+  const button = $("#partSaveBtn");
+  if (button) button.disabled = pendingPartUploads > 0 || pendingInstallUploads > 0;
+}
 const rowSpec = (k = "", v = "") => `<div class="flex gap-2 mb-2 spec"><input class="inp" list="sk" placeholder="หัวข้อ เช่น voltage" value="${esc(k)}"><input class="inp" placeholder="ค่า เช่น 24VDC" value="${esc(v)}"><button type="button" class="btn" onclick="this.parentElement.remove()" aria-label="ลบแถว">✕</button></div>`;
 const rowDoc = (n = "", u = "") => `<div class="flex gap-2 mb-2 doc"><input class="inp" placeholder="ชื่อเอกสาร" value="${esc(n)}"><input class="inp" placeholder="URL (https://...)" value="${esc(u)}"><button type="button" class="btn" onclick="this.parentElement.remove()" aria-label="ลบแถว">✕</button></div>`;
 function partForm(id) {
@@ -375,7 +425,7 @@ function partForm(id) {
   open(`${head(id ? "แก้ไขอะไหล่" : "เพิ่มอะไหล่")}
   <div class="p-4"><datalist id="sk">${CONFIG.specKeys.map(k => `<option value="${k}">`).join("")}</datalist>
   <div class="grid sm:grid-cols-2 gap-x-3">
-    <div><label class="lbl">Part No. *</label><input id="f_pn" class="inp mono" value="${esc(p.part_number)}" ${id ? "readonly" : ""}></div>
+    <div><label class="lbl">Part No. *</label><input id="f_pn" class="inp mono" value="${esc(p.part_number)}"></div>
     <div><label class="lbl">หมวดหมู่ *</label><select id="f_cat" class="inp">${opt(CONFIG.categories, p.category)}</select></div>
     <div><label class="lbl">ชื่อไทย</label><input id="f_th" class="inp" value="${esc(p.part_name_th)}"></div>
     <div><label class="lbl">ชื่ออังกฤษ</label><input id="f_en" class="inp" value="${esc(p.part_name_en)}"></div>
@@ -403,7 +453,7 @@ function partForm(id) {
   <div class="grid sm:grid-cols-2 gap-1 max-h-40 overflow-y-auto border rounded p-2" style="border-color:var(--line)">${parts.filter(x => x.active !== false && x.id !== p.id).map(x => `<label class="flex items-center gap-2 min-h-[36px]"><input type="checkbox" class="f_substitute" value="${esc(x.id)}" ${(p.substitute_ids || []).includes(x.id) ? "checked" : ""}><span class="mono">${esc(x.part_number)}</span> ${esc(x.part_name_th || x.part_name_en || "")}</label>`).join("") || `<span style="color:var(--mute)">ยังไม่มีอะไหล่อื่นให้เลือก</span>`}</div>
   <label class="lbl">เอกสาร / Datasheet</label><div id="docs">${(p.documents || []).map(d => rowDoc(d.name, d.url)).join("")}</div><button type="button" class="btn" onclick="docs.insertAdjacentHTML('beforeend',rowDoc())">+ เพิ่มเอกสาร</button>
   <label class="lbl">หมายเหตุ</label><textarea id="f_rm" class="inp" rows="2">${esc(p.remark)}</textarea>
-  <div class="mt-5 flex gap-2"><button class="btn btn-p" onclick="savePart(${id ? jsArg(id) : "null"})">บันทึก</button><button class="btn" onclick="closeDlg()">ยกเลิก</button></div><p id="err" class="error-text text-sm mt-2"></p></div>`);
+  <div class="mt-5 flex gap-2"><button id="partSaveBtn" class="btn btn-p" onclick="savePart(${id ? jsArg(id) : "null"})">บันทึก</button><button class="btn" onclick="closeDlg()">ยกเลิก</button></div><p id="err" class="error-text text-sm mt-2"></p></div>`);
   drawImgs();
   drawInstallImgs();
 }
@@ -474,6 +524,12 @@ async function uploadFromInput(input, target) {
       machineUploadPending = true;
       const saveButton = $("#mSaveBtn");
       if (saveButton) saveButton.disabled = true;
+    } else if (target === "install") {
+      pendingInstallUploads++;
+      updatePartSaveButton();
+    } else {
+      pendingPartUploads++;
+      updatePartSaveButton();
     }
     await upload(input.files, target);
   } catch (e) {
@@ -485,6 +541,12 @@ async function uploadFromInput(input, target) {
       machineUploadPending = false;
       const saveButton = $("#mSaveBtn");
       if (saveButton) saveButton.disabled = false;
+    } else if (target === "install") {
+      pendingInstallUploads--;
+      updatePartSaveButton();
+    } else {
+      pendingPartUploads--;
+      updatePartSaveButton();
     }
     input.value = "";
   }
@@ -492,10 +554,11 @@ async function uploadFromInput(input, target) {
 async function savePart(id) {
   const pn = $("#f_pn").value.trim(), cat = $("#f_cat").value;
   if (!pn || !cat) { $("#err").textContent = "กรอก Part No. และเลือกหมวดหมู่"; return; }
+  if (pendingPartUploads || pendingInstallUploads) { $("#err").textContent = "รอให้อัปโหลดรูปภาพเสร็จก่อน"; return; }
   const docs = [...document.querySelectorAll(".doc")].map(r => { const [n, u] = r.querySelectorAll("input"); return { name: n.value.trim(), url: u.value.trim() }; }).filter(d => d.url);
   if (docs.some(d => !safeUrl(d.url))) { $("#err").textContent = "URL เอกสารต้องเป็นลิงก์ http:// หรือ https://"; return; }
   const key = id || docId(pn);
-  if (!id && parts.some(p => p.id === key && p.active !== false)) { $("#err").textContent = "มี Part No. นี้อยู่แล้ว"; return; }
+  if (parts.some(p => p.id !== id && p.active !== false && (p.id === key || p.part_number === pn))) { $("#err").textContent = "มี Part No. นี้อยู่แล้ว"; return; }
   const specs = {}; document.querySelectorAll(".spec").forEach(r => { const [k, v] = r.querySelectorAll("input"); if (k.value.trim()) specs[k.value.trim()] = v.value.trim(); });
   if (fImgs.some(u => !safeUrl(u)) || fInstallImgs.some(u => !safeUrl(u))) { $("#err").textContent = "มี URL รูปภาพไม่ถูกต้อง กรุณาลบหรือแก้ไขรูปนั้น"; return; }
   if (fInstallMarkers.some(m => !Number.isFinite(m.x) || !Number.isFinite(m.y) || m.x < 0 || m.x > 100 || m.y < 0 || m.y > 100 || !fInstallImgs[m.image_index])) { $("#err").textContent = "พบจุดทำเครื่องหมายที่ไม่ถูกต้อง กรุณาตรวจรูปตำแหน่งติดตั้ง"; return; }
